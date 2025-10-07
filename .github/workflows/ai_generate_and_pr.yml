@@ -32,7 +32,7 @@ jobs:
         # GitHub CLI (gh) を使用して、依頼内容を基にイシューを作成し、イシュー番号を変数に保存 [6]
         run: |
           # 依頼内容をタイトルとしてイシューを作成し、出力からイシュー番号を抽出
-          issue_output=$(gh issue create --title "AI生成依頼: ${{ github.event.inputs.request_description }}" --body "ユーザー依頼: ${{ github.event.inputs.request_description }}" --assignee "@me")
+          issue_output=$(gh issue create --title "AI生成依頼: ${{ github.event.inputs.request_description }}" --body "ユーザー依頼: ${{ github.event.inputs.request_description }}")
           issue_num=$(echo $issue_output | awk -F'/' '{print $NF}')
           
           # イシュー番号とブランチ名を環境変数として設定
