@@ -40,7 +40,7 @@ if __name__ == "__main__":
     """
 
     try:
-        client = genai.Client()
+        client = genai.Client(api_key=api_key)
         
         # 構造化出力の設定 [2]
         response = client.models.generate_content(
