@@ -1,0 +1,68 @@
+name: 1. AIコード生成とPR作成
+# ユーザーがActionsタブから手動で実行できるようにする [4]
+on:
+  workflow_dispatch:
+    inputs:
+      request_description:
+        description: 'AIに作成してほしいウェブサイトの依頼内容を入力してください。'
+        required: true
+        type: string
+
+jobs:
+  generate_and_pr:
+    runs-on: ubuntu-latest
+    # ワークフローに必要な権限を明示的に設定（セキュリティ上のベストプラクティス）
+    permissions:
+      contents: write       # コミットとプッシュのため [5]
+      pull-requests: write  # PR作成のため [5]
+      issues: write         # イシュー作成のため [5]
+    
+    steps:
+      - name: ⬇️ リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Python環境のセットアップと依存関係のインストール
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: ⚙️ 必要なPythonライブラリをインストール
+        run: pip install google-genai pydantic
+        
+      - name: 🐛 トラッキングイシューの自動作成
+        # GitHub CLI (gh) を使用して、依頼内容を基にイシューを作成し、イシュー番号を変数に保存 [6]
+        run: |
+          # 依頼内容をタイトルとしてイシューを作成し、出力からイシュー番号を抽出
+          issue_output=$(gh issue create --title "AI生成依頼: ${{ github.event.inputs.request_description }}" --body "ユーザー依頼: ${{ github.event.inputs.request_description }}" --assignee "@me")
+          issue_num=$(echo $issue_output | awk -F'/' '{print $NF}')
+          
+          # イシュー番号とブランチ名を環境変数として設定
+          echo "ISSUE_NUMBER=$issue_num" >> $GITHUB_ENV
+          echo "BRANCH_NAME=feature/ai-website-${issue_num}" >> $GITHUB_ENV
+          echo "✅ トラッキングイシュー #${issue_num} を作成しました。"
+        env:
+          # GitHub CLI認証のために必須
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🤖 AIジェネレータを実行しファイルを生成
+        # GEMINI_API_KEYを環境変数として注入し、Pythonスクリプトから安全にアクセスさせる [7, 3]
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python generate_website.py "${{ github.event.inputs.request_description }}"
+          
+      - name: 🔄 Pull Requestを自動作成（コミットとブランチ作成を含む）
+        # Peter Evans氏のActionは、変更されたファイルを自動的にコミットし、新しいブランチにプッシュし、PRを作成する [5, 8]
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "feat(ai): generated website for issue #${{ env.ISSUE_NUMBER }}"
+          title: "AI生成ウェブサイト: Issue #${{ env.ISSUE_NUMBER }}"
+          branch: ${{ env.BRANCH_NAME }}
+          base: main
+          body: |
+            このウェブサイトは、Issue #${{ env.ISSUE_NUMBER }} の依頼に基づき、Gemini APIによって自動生成されました。
+            コードの品質とデザインのレビューをお願いします。
+            
+            マージされた場合、Issue #${{ env.ISSUE_NUMBER }} は自動的にクローズされます。
+            
+            Closes #${{ env.ISSUE_NUMBER }} # PRとイシューを紐付け、マージ時にイシューを自動クローズ
