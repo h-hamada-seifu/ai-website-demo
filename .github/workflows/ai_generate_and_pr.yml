@@ -53,7 +53,17 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python generate_website.py "${{ github.event.inputs.request_description }}"
-          
+          echo "--- 生成されたファイルの確認 ---"
+          ls -la *.html *.css 2>/dev/null || echo "HTMLまたはCSSファイルが見つかりません"
+          echo "--- style.cssのファイルサイズ確認 ---"
+          if [ -f "style.css" ]; then
+            wc -c style.css
+            echo "--- style.cssの内容（最初の10行） ---"
+            head -n 10 style.css
+          else
+            echo "style.cssが存在しません"
+          fi
+
       - name: 🔄 Pull Requestを自動作成（コミットとブランチ作成を含む）
         # Peter Evans氏のActionは、変更されたファイルを自動的にコミットし、新しいブランチにプッシュし、PRを作成する [5, 8]
         uses: peter-evans/create-pull-request@v7
