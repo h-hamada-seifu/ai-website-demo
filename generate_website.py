@@ -63,36 +63,14 @@ if __name__ == "__main__":
 
         # 生成されたファイルをディスクに書き込む
         print("--- ファイル生成開始 ---")
-        print(f"生成されたファイル数: {len(generated_files)}")
-
         for file_obj in generated_files:
             filename = file_obj.filename
             content = file_obj.content
-            content_length = len(content)
-
-            print(f"ファイル名: {filename}, コンテンツ長: {content_length} 文字")
-
-            # 内容が空の場合は警告を出力
-            if content_length == 0:
-                print(f"⚠️  警告: {filename} の内容が空です！")
 
             # ファイル名をチェックし、コンテンツを書き込む
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(content)
             print(f"✅ ファイル作成: {filename}")
-
-            # ファイルが正しく書き込まれたか確認
-            with open(filename, 'r', encoding='utf-8') as f:
-                written_content = f.read()
-                written_length = len(written_content)
-                print(f"📝 書き込み確認: {filename}, 読み取った長さ: {written_length} 文字")
-
-                if written_length != content_length:
-                    print(f"❌ エラー: 書き込み前({content_length})と書き込み後({written_length})で長さが異なります！")
-
-                # style.cssの場合は最初の200文字を表示
-                if filename == "style.css" and written_length > 0:
-                    print(f"style.css の最初の200文字:\n{written_content[:200]}")
 
         print("--- ファイル生成完了 ---")
 
