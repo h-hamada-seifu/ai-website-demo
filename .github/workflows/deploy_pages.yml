@@ -12,14 +12,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Pagesデプロイに必要な権限のみを付与 [9]
     permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment: # デプロイの成功後にURLが表示される設定
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: write  # gh-pagesブランチへのプッシュのため
 
     steps:
       - name: ⬇️ リポジトリをチェックアウト
@@ -41,19 +35,15 @@ jobs:
           echo "✅ 本番デプロイ用ファイルを準備しました"
           ls -la public/
 
-      - name: ⚙️ Pagesデプロイ環境のセットアップ
-        uses: actions/configure-pages@v5
-
-      - name: 📤 成果物（生成されたファイル）をアップロード
-        uses: actions/upload-pages-artifact@v3
+      - name: 🚀 GitHub Pagesにデプロイ（gh-pagesブランチ）
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: ./public
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          keep_files: true  # プレビュー環境（preview/）を保持
+          commit_message: "Deploy production site from main branch"
 
-      - name: 🚀 GitHub Pagesにデプロイ
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: ✅ デプロイURLの出力
+      - name: ✅ デプロイ完了
         run: |
           echo "🎉 ウェブサイトが公開されました！"
-          echo "URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"

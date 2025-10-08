@@ -23,10 +23,16 @@
 2. **左メニューから「Pages」を選択**
 
 3. **Source（ソース）設定**:
-   - **Source**: `GitHub Actions` を選択
-   - ⚠️ 重要: `Deploy from a branch` ではなく `GitHub Actions` を選択してください
+   - **Source**: `Deploy from a branch` を選択
+   - **Branch**: `gh-pages` / `/ (root)` を選択
+   - ⚠️ 重要: `GitHub Actions` ではなく `Deploy from a branch` を選択してください
 
-4. **保存**
+4. **Saveボタンをクリック**
+
+5. **GitHub Actions の権限設定**:
+   - Settings → Actions → General → Workflow permissions
+   - `Read and write permissions` を有効化
+   - `Allow GitHub Actions to create and approve pull requests` をON
 
 これで設定完了です！
 
