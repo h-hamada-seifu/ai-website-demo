@@ -1,9 +1,13 @@
-name: 2. GitHub Pages 自動デプロイ
+name: 2. GitHub Pages 本番デプロイ
 # mainブランチにコードがマージ（プッシュ）されたときに起動 [9]
 on:
   push:
     branches:
-      - main 
+      - main
+    paths:
+      - '**.html'
+      - '**.css'
+      - '**.js'
 
 jobs:
   deploy:
@@ -11,28 +15,45 @@ jobs:
     # Pagesデプロイに必要な権限のみを付与 [9]
     permissions:
       contents: read
-      pages: write 
-      id-token: write 
+      pages: write
+      id-token: write
     environment: # デプロイの成功後にURLが表示される設定
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
       - name: ⬇️ リポジトリをチェックアウト
         uses: actions/checkout@v4
-        
+
+      - name: 📦 本番デプロイ用ディレクトリを準備
+        run: |
+          mkdir -p public
+
+          # HTMLとCSSファイルを本番ディレクトリにコピー
+          find . -maxdepth 1 -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" \) -exec cp {} public/ \;
+
+          # index.htmlが存在するか確認
+          if [ ! -f "public/index.html" ]; then
+            echo "⚠️  警告: index.htmlが見つかりません"
+            echo "<html><body><h1>Welcome to AI Website Demo</h1><p>No content available yet.</p></body></html>" > public/index.html
+          fi
+
+          echo "✅ 本番デプロイ用ファイルを準備しました"
+          ls -la public/
+
       - name: ⚙️ Pagesデプロイ環境のセットアップ
-        uses: actions/configure-pages@v5 [9]
-        
+        uses: actions/configure-pages@v5
+
       - name: 📤 成果物（生成されたファイル）をアップロード
-        # AIが生成したファイル（ルートディレクトリにある）を成果物としてアップロード
         uses: actions/upload-pages-artifact@v3
         with:
-          path:. # ルートディレクトリ全体をデプロイ対象とする
-          
+          path: ./public
+
       - name: 🚀 GitHub Pagesにデプロイ
         id: deployment
-        uses: actions/deploy-pages@v4 [9]
-        
+        uses: actions/deploy-pages@v4
+
       - name: ✅ デプロイURLの出力
-        run: echo "ウェブサイトが公開されました: ${{ steps.deployment.outputs.page_url }}"
+        run: |
+          echo "🎉 ウェブサイトが公開されました！"
+          echo "URL: ${{ steps.deployment.outputs.page_url }}"
