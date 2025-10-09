@@ -69,6 +69,12 @@ jobs:
 
             Closes #${{ env.ISSUE_NUMBER }} # PRとイシューを紐付け、マージ時にイシューを自動クローズ
 
+      - name: 📦 作成されたブランチにチェックアウト
+        if: steps.create-pr.outputs.pull-request-number != ''
+        run: |
+          git fetch origin ${{ env.BRANCH_NAME }}
+          git checkout ${{ env.BRANCH_NAME }}
+
       - name: 📦 プレビュー用ディレクトリを準備
         if: steps.create-pr.outputs.pull-request-number != ''
         run: |
