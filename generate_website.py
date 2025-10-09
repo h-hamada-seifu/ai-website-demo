@@ -3,6 +3,8 @@ import sys
 import json
 from google import genai
 from pydantic import BaseModel, Field
+from bs4 import BeautifulSoup
+import cssbeautifier
 
 # Pydanticを使って、AIの出力構造を定義します
 # AIは必ずこの「File」のリスト形式でコードを出力するよう強制されます [2]
@@ -66,6 +68,15 @@ if __name__ == "__main__":
         for file_obj in generated_files:
             filename = file_obj.filename
             content = file_obj.content
+
+            # HTMLファイルの場合は整形
+            if filename.endswith('.html'):
+                soup = BeautifulSoup(content, 'html.parser')
+                content = soup.prettify()
+
+            # CSSファイルの場合は整形
+            elif filename.endswith('.css'):
+                content = cssbeautifier.beautify(content)
 
             # ファイル名をチェックし、コンテンツを書き込む
             with open(filename, 'w', encoding='utf-8') as f:
