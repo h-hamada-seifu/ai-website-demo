@@ -53,6 +53,7 @@ jobs:
 
       - name: 🔄 Pull Requestを自動作成（コミットとブランチ作成を含む）
         # Peter Evans氏のActionは、変更されたファイルを自動的にコミットし、新しいブランチにプッシュし、PRを作成する [5, 8]
+        id: create-pr
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -63,7 +64,58 @@ jobs:
           body: |
             このウェブサイトは、Issue #${{ env.ISSUE_NUMBER }} の依頼に基づき、Gemini APIによって自動生成されました。
             コードの品質とデザインのレビューをお願いします。
-            
+
             マージされた場合、Issue #${{ env.ISSUE_NUMBER }} は自動的にクローズされます。
-            
+
             Closes #${{ env.ISSUE_NUMBER }} # PRとイシューを紐付け、マージ時にイシューを自動クローズ
+
+      - name: 📦 プレビュー用ディレクトリを準備
+        if: steps.create-pr.outputs.pull-request-number != ''
+        run: |
+          mkdir -p preview/pr-${{ steps.create-pr.outputs.pull-request-number }}
+
+          # HTMLとCSSファイルをプレビューディレクトリにコピー
+          find . -maxdepth 1 -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" \) -exec cp {} preview/pr-${{ steps.create-pr.outputs.pull-request-number }}/ \;
+
+          echo "✅ PR #${{ steps.create-pr.outputs.pull-request-number }} のプレビュー環境を準備しました"
+          ls -la preview/pr-${{ steps.create-pr.outputs.pull-request-number }}/
+
+      - name: 🚀 GitHub Pagesにプレビューをデプロイ
+        if: steps.create-pr.outputs.pull-request-number != ''
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./preview
+          destination_dir: preview
+          keep_files: true
+          commit_message: "Deploy preview for PR #${{ steps.create-pr.outputs.pull-request-number }}"
+
+      - name: 💬 プレビューURLをPRにコメント
+        if: steps.create-pr.outputs.pull-request-number != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.create-pr.outputs.pull-request-number }};
+            const repoName = context.repo.repo;
+            const owner = context.repo.owner;
+            const previewUrl = `https://${owner}.github.io/${repoName}/preview/pr-${prNumber}/index.html`;
+
+            const comment = `## 🎉 プレビュー環境が準備できました！
+
+            **プレビューURL**: [${previewUrl}](${previewUrl})
+
+            このPRの変更内容を上記URLで確認できます。
+
+            ### 📄 ページ一覧
+            - [トップページ](${previewUrl})
+            - [Aboutページ](https://${owner}.github.io/${repoName}/preview/pr-${prNumber}/about.html)
+
+            ---
+            🤖 このコメントは自動生成されました`;
+
+            await github.rest.issues.createComment({
+              owner: owner,
+              repo: repoName,
+              issue_number: prNumber,
+              body: comment
+            });
